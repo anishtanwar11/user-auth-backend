@@ -3,9 +3,14 @@
   "version": "1.0.0",
   "description": "Auth app",
   "main": "index.js",
+  "type": "module",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "nodemon cd src && index.js"
   },
   "author": "Anish Tanwar",
-  "license": "ISC"
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.21.1",
+    "nodemon": "^3.1.7"
+  }
 }
