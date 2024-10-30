@@ -9,7 +9,7 @@ import { User } from "../models/user.model.js";
 export const verifyJwt = asyncHandler(async (req, res, next) => {
   const token =
     req.cookies?.accessToken ||
-    req.header("Authorizarion")?.replace("Bearer ", "");
+    req.header("Authorization")?.replace("Bearer ", "");
 
   console.log("Logout request received: -req.cookies-", req.cookies);
   if (req.cookies.accessToken) {
