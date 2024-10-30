@@ -99,7 +99,7 @@ const logoutUser = asyncHandler( async(req, res) => {
         {
             $set: {
                 refreshToken: '',
-            }
+            },
         },
         { new: true }
     );
@@ -107,6 +107,7 @@ const logoutUser = asyncHandler( async(req, res) => {
     const options = {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
+        sameSite: "None"  // Needed for cross-origin requests
     }
 
     return res
