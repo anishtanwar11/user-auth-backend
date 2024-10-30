@@ -10,11 +10,17 @@ export const verifyJwt = asyncHandler(async (req, res, next) => {
   const token =
     req.cookies?.accessToken ||
     req.header("Authorizarion")?.replace("Bearer ", "");
-  console.log("Token-", token);
+
+  console.log("Logout request received: -req.cookies-", req.cookies);
+  if (req.cookies.accessToken) {
+    console.log("Access Token present:", req.cookies.accessToken);
+  } else {
+    console.log("Access Token missing.");
+  }
   if (!token) {
     throw new ApiError(400, "Unauthorized request");
   }
-  
+
   try {
     const decodedToken = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
 
