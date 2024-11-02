@@ -11,7 +11,7 @@ export const verifyJwt = asyncHandler(async (req, res, next) => {
     req.cookies?.accessToken ||
     req.header("Authorization")?.replace("Bearer ", "");
 
-  console.log("Logout request received: -req.cookies-", req.cookies);
+    console.log("req.cookies?.accessToken",req.cookies?.accessToken)
   if (req.cookies.accessToken) {
     console.log("Access Token present:", req.cookies.accessToken);
   } else {
