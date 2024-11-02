@@ -1,8 +1,7 @@
 import dotenv from "dotenv";
 dotenv.config();
 import { v2 as cloudinary } from "cloudinary";
-import fs from "fs";
-import { error } from "console";
+// import fs from "fs";
 
 // Configuration
 cloudinary.config({
@@ -11,24 +10,24 @@ cloudinary.config({
     api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-const uploadOnCloudinary = async (fileBuffer, filename) => {
-    try {
-        if(!fileBuffer) return null;
+const uploadOnCloudinary = (fileBuffer) => {
+    return new Promise((resolve, reject) => {
+        if (!fileBuffer) return reject(new Error("File buffer is required"));
 
-        const response = await cloudinary.uploader.upload_stream(
-            {resource_type: "auto", public_id:filename},
+        const stream = cloudinary.uploader.upload_stream(
+            { resource_type: "auto" },
             (error, result) => {
-                if (error) throw new Error(error.message);
-                return result;
+                if (error) {
+                    console.error("Cloudinary upload error:", error);
+                    return reject(new Error(error.message));
+                }
+                resolve(result); // Result should contain public_id and url
             }
-        ).end(fileBuffer);
+        );
 
-        return response;
-    } catch (error) {
-        console.error("Cloudinary upload error:", error);
-        return null
-    }
-}
+        stream.end(fileBuffer);
+    });
+};
 
 const destroyFromCloudinary = async (publicId) => {
     try {

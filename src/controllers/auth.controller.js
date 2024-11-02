@@ -114,7 +114,7 @@ const loginUser = asyncHandler(async (req, res) => {
   const options = {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
-    sameSite: "None" // enable when deployee website
+    // sameSite: "None" // enable when deployee website
   };
 
   return res
@@ -200,17 +200,23 @@ const verifyEmail = asyncHandler(async (req, res) => {
 const avatarUpdate = asyncHandler(async (req, res) => {
   const avatarFile = req.files?.avatar[0];
 
+  console.log("Avatar-file-", avatarFile);
+  
+
   if (!avatarFile) {
     throw new ApiError(404, "Avatar local file path is required");
   }
 
-  const avatar = await uploadOnCloudinary(avatarFile.buffer, avatarFile.originalname);
+  const avatar = await uploadOnCloudinary(avatarFile.buffer);
 
-  if (!avatar) {
+  console.log("Avatar upload response", avatar)
+
+  if (!avatar || !avatar.url || !avatar.public_id) {
     throw new ApiError(409, "Avatar cloudinary file URL is required");
-  }
-
+}
   const user = await User.findById(req.user._id);
+
+  console.log("user-", user)
 
   if(!user){
     throw new ApiError(400, "User not found!");
@@ -229,6 +235,8 @@ const avatarUpdate = asyncHandler(async (req, res) => {
     "-password -refreshToken -avatarPublicId"
   );
 
+  console.log("Updated User-", updatedUser);
+  
   return res.status(200).json(
     new ApiResponse(200, updatedUser, "Avatar updated successfully!")
   )
