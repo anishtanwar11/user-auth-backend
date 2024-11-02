@@ -10,7 +10,8 @@ const sendMail = async (options) => {
     product: {
       // Appears in header & footer of e-mails
       name: "Notebook",
-      link: "http://localhost:5173/",
+      // link: "http://localhost:5173/",
+      link: "https://authuserfrontend.vercel.app/", // For Live site
       // Optional product logo
       // logo: 'https://mailgen.js/img/logo.png'
     },
