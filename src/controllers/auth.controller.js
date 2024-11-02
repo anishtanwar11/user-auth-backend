@@ -198,21 +198,19 @@ const verifyEmail = asyncHandler(async (req, res) => {
 });
 
 const avatarUpdate = asyncHandler(async (req, res) => {
-  const avatarLocalPath = req.files?.avatar[0]?.path;
+  const avatarFile = req.files?.avatar[0];
 
-  if (!avatarLocalPath) {
+  if (!avatarFile) {
     throw new ApiError(404, "Avatar local file path is required");
   }
 
-  const avatar = await uploadOnCloudinary(avatarLocalPath);
+  const avatar = await uploadOnCloudinary(avatarFile.buffer, avatarFile.originalname);
 
   if (!avatar) {
     throw new ApiError(409, "Avatar cloudinary file URL is required");
   }
 
-  const user = await User.findById(
-    req.user._id,
-  );
+  const user = await User.findById(req.user._id);
 
   if(!user){
     throw new ApiError(400, "User not found!");
