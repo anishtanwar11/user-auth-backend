@@ -3,8 +3,15 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { ApiError } from "../utils/ApiError.js";
 import { User } from "../models/user.model.js";
-import { emailVerificationMailgenContent, sendMail } from "../utils/mail.js";
-import { destroyFromCloudinary, uploadOnCloudinary } from "../utils/cloudinary.js";
+import {
+  emailVerificationMailgenContent,
+  sendMail,
+  forgotPasswordMailgenContent,
+} from "../utils/mail.js";
+import {
+  destroyFromCloudinary,
+  uploadOnCloudinary,
+} from "../utils/cloudinary.js";
 
 const generateAccessAndRefreshToken = async (userId) => {
   try {
@@ -28,7 +35,7 @@ const generateAccessAndRefreshToken = async (userId) => {
 const registerUser = asyncHandler(async (req, res) => {
   const { fullName, email, password } = req.body;
   if ([fullName, email, password].some((feild) => feild?.trim() === "")) {
-    throw new ApiError(400, "All feilds required!");
+    throw new ApiError(400, "All fields required!");
   }
 
   const existingUser = await User.findOne({ email });
@@ -57,7 +64,9 @@ const registerUser = asyncHandler(async (req, res) => {
     subject: "Please verify you email",
     mailgenContent: emailVerificationMailgenContent(
       user.fullName,
-      `${req.protocol}://${req.get("host")}/api/v1/user/verift-email/${unHashedToken}`
+      `${req.protocol}://${req.get(
+        "host"
+      )}/api/v1/user/verift-email/${unHashedToken}`
     ),
   });
 
@@ -88,7 +97,7 @@ const loginUser = asyncHandler(async (req, res) => {
 
   const user = await User.findOne({ email });
   if (!user) {
-    throw new ApiError(404, "User not exist!");
+    throw new ApiError(404, "User with email not exist!");
   }
 
   if (user.isEmailVerified === false) {
@@ -114,7 +123,7 @@ const loginUser = asyncHandler(async (req, res) => {
   const options = {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
-    sameSite: "None" // enable when deployee website
+    sameSite: "None", // enable when deployee website
   };
 
   return res
@@ -201,7 +210,6 @@ const avatarUpdate = asyncHandler(async (req, res) => {
   const avatarFile = req.files?.avatar[0];
 
   console.log("Avatar-file-", avatarFile);
-  
 
   if (!avatarFile) {
     throw new ApiError(404, "Avatar local file path is required");
@@ -209,22 +217,22 @@ const avatarUpdate = asyncHandler(async (req, res) => {
 
   const avatar = await uploadOnCloudinary(avatarFile.buffer);
 
-  console.log("Avatar upload response", avatar)
+  console.log("Avatar upload response", avatar);
 
   if (!avatar || !avatar.url || !avatar.public_id) {
     throw new ApiError(409, "Avatar cloudinary file URL is required");
-}
+  }
   const user = await User.findById(req.user._id);
 
-  console.log("user-", user)
+  console.log("user-", user);
 
-  if(!user){
+  if (!user) {
     throw new ApiError(400, "User not found!");
   }
 
-  if(user.avatarPublicId){
-    await destroyFromCloudinary(user.avatarPublicId)
-    console.log()
+  if (user.avatarPublicId) {
+    await destroyFromCloudinary(user.avatarPublicId);
+    console.log();
   }
 
   user.avatar = avatar.url;
@@ -236,16 +244,95 @@ const avatarUpdate = asyncHandler(async (req, res) => {
   );
 
   console.log("Updated User-", updatedUser);
-  
-  return res.status(200).json(
-    new ApiResponse(200, updatedUser, "Avatar updated successfully!")
-  )
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, updatedUser, "Avatar updated successfully!"));
 });
 
-export { 
-  registerUser, 
-  loginUser, 
-  logoutUser, 
-  verifyEmail, 
-  avatarUpdate 
+const forgotPasswordRequest = asyncHandler(async (req, res) => {
+  const { email } = req.body;
+
+  if(!email){
+    throw new ApiError(400, "Registered email is required!.");
+  }
+  
+  const user = await User.findOne({ email });
+  if (!user) {
+    throw new ApiError(400, "User with email not exist.");
+  }
+
+  // Generate temporary token
+  const { unHashedToken, hashedToken, tokenExpiry } =
+    user.generateTemporaryToken();
+
+  user.forgotPasswordToken = hashedToken;
+  user.forgotPasswordExpiry = tokenExpiry;
+  await user.save({ validateBeforeSave: false });
+
+  await sendMail({
+    email: user?.email,
+    subject: "Password reset request",
+    mailgenContent: forgotPasswordMailgenContent(
+      user.fullName,
+      // ! NOTE: Following link should be the link of the frontend page responsible to request password reset
+      // ! Frontend will send the below token with the new password in the request body to the backend reset password endpoint
+      `${process.env.FORGOT_PASSWORD_REDIRECT_URL}/${unHashedToken}`
+    ),
+  });
+
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(
+        200,
+        {},
+        "Password reset mail has been sent on your mail id"
+      )
+    );
+});
+
+const resetForgottenPassword = asyncHandler(async (req, res) => {
+  const { resetToken } = req.params;
+  const { newPassword } = req.body;
+
+  if(!newPassword){
+    throw new ApiError(400, "Password is required");
+  }
+
+  console.log("resetToken-",resetToken, "newPassword-",newPassword )
+
+  let hashedToken = crypto
+    .createHash("sha256")
+    .update(resetToken)
+    .digest("hex");
+
+    console.log("hashed Token-",hashedToken)
+  const user = await User.findOne({
+    forgotPasswordToken: hashedToken,
+    forgotPasswordExpiry: { $gt: Date.now() },
+  });
+
+  if (!user) {
+    throw new ApiError(400, "Token is invalid or expired");
+  }
+
+  user.forgotPasswordToken = undefined;
+  user.forgotPasswordExpiry = undefined;
+  user.password = newPassword;
+  await user.save({ validateBeforeSave: false });
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, {}, "Password reset successfully"));
+});
+
+export {
+  registerUser,
+  loginUser,
+  logoutUser,
+  verifyEmail,
+  avatarUpdate,
+  forgotPasswordRequest,
+  resetForgottenPassword,
 };

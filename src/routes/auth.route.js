@@ -5,6 +5,8 @@ import {
   registerUser,
   verifyEmail,
   avatarUpdate,
+  forgotPasswordRequest,
+  resetForgottenPassword
 } from "../controllers/auth.controller.js";
 import { verifyJwt } from "../middlewares/auth.middleware.js";
 import { upload } from "../middlewares/multer.middleware.js";
@@ -29,5 +31,9 @@ router.route("/avatar").put(
   verifyJwt,
   avatarUpdate
 );
+
+router.route("/forgot-password").post(forgotPasswordRequest);
+
+router.route("/reset-password/:resetToken").post(resetForgottenPassword);
 
 export default router;

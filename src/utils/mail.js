@@ -11,7 +11,7 @@ const sendMail = async (options) => {
       // Appears in header & footer of e-mails
       name: "Notebook",
       // link: "http://localhost:5173/",
-      link: "https://authuserfrontend.vercel.app/", // For Live site
+      link: process.env.CORS_ORIGIN, // For Live site
       // Optional product logo
       // logo: 'https://mailgen.js/img/logo.png'
     },
@@ -51,6 +51,14 @@ const sendMail = async (options) => {
   }
 };
 
+
+/**
+ *
+ * @param {string} username
+ * @param {string} verificationUrl
+ * @returns {Mailgen.Content}
+ * @description It designs the email verification mail
+ */
 const emailVerificationMailgenContent = (fullName, verificationUrl) => {
     return {
       body: {
@@ -71,4 +79,31 @@ const emailVerificationMailgenContent = (fullName, verificationUrl) => {
     };
 };
 
-export { sendMail, emailVerificationMailgenContent}
+
+/**
+ *
+ * @param {string} username
+ * @param {string} verificationUrl
+ * @returns {Mailgen.Content}
+ * @description It designs the forgot password mail
+ */
+const forgotPasswordMailgenContent = (fullName, passwordResetUrl) => {
+  return {
+    body: {
+      name: fullName,
+      intro: "We got a request to reset the password of your account.",
+      action: {
+        instructions: "To reset your password click on tyhe following button",
+        button: {
+          color: "#22BC66", // Optional action button color
+          text: "Reset password",
+          link: passwordResetUrl,
+        },
+      },
+      outro : 
+        "Need help, or have questions? Just reply to this email, we'd love to help.",
+    },
+  };
+};
+
+export { sendMail, emailVerificationMailgenContent, forgotPasswordMailgenContent}
