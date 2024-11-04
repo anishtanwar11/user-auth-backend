@@ -10,7 +10,7 @@ const sendMail = async (options) => {
     product: {
       // Appears in header & footer of e-mails
       name: "Notebook",
-      link: process.env.CORS_ORIGIN,
+      link: process.env.REQUEST_ADDRESS_FROM_FRONTEND,
       // Optional product logo
       // logo: 'https://mailgen.js/img/logo.png'
     },
