@@ -1,3 +1,5 @@
+import dotenv from "dotenv";
+dotenv.config();
 import crypto from "crypto";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
