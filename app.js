@@ -19,9 +19,14 @@ app.use(cors({
 
 // Route Import
 import userRouter from "./src/routes/auth.route.js"
+import notebookRouter from "./src/routes/notebook.route.js"
 
 // Define Route
 app.use("/api/v1/user", userRouter)
+
+app.use("/api/v1/notebook", notebookRouter)
+
+
 
 app.use((err, req, res, next) => {
     console.error(err); // Log the error for debugging
