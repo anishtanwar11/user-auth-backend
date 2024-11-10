@@ -26,8 +26,6 @@ app.use("/api/v1/user", userRouter)
 
 app.use("/api/v1/notebook", notebookRouter)
 
-
-
 app.use((err, req, res, next) => {
     console.error(err); // Log the error for debugging
     if (err instanceof ApiError) {

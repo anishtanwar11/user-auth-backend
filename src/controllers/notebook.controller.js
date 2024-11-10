@@ -11,6 +11,17 @@ const createNotebook = asyncHandler (async (req, res) => {
         throw new ApiError(400, "Notebook title is required")
     }
 
+    // Check if the notebook with the same name already exists for the logged-in user
+    const existingNotebook = await Notebook.findOne({ 
+        user: userId,
+        title: { $regex: new RegExp(`^${title}$`, 'i')} // Case-insensitive search
+    });
+
+    // If a notebook with the same name already exists, throw an error
+    if (existingNotebook) {
+        throw new ApiError(409, "You already have a notebook with that name. Try a different name.");
+    }
+
     const notebook = await Notebook.create({
         title,
         user: userId
