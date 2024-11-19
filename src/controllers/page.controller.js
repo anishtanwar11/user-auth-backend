@@ -33,7 +33,7 @@ const createPage = asyncHandler(async (req, res) => {
     }
 
     const page = new Page({
-        title: "Untitle Page",
+        title: "Untitled Page",
         content: "",
         section: sectionId 
     })

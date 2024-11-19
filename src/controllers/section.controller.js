@@ -39,7 +39,7 @@ const createSection = asyncHandler (async (req, res) => {
     })
 
     const defaultPage = await Page.create({
-        title: "Untitle Page",
+        title: "Untitled Page",
         content: "",
         section: section._id
     }) 
@@ -68,7 +68,58 @@ const getSection = asyncHandler (async (req, res) => {
     );
 })
 
+const updateSection = asyncHandler (async (req, res) => {
+    const { sectionId } = req.params;
+    const { title } = req.body;
+
+    if(!sectionId || !title){
+        throw new ApiError(400, "SectionId & Title is required")
+    }
+
+    const section = await Section.findByIdAndUpdate(sectionId, {title}, {new: true});
+    if(!section){
+        throw new ApiError(404, "Error occure during section title is updating")
+    }
+
+    return res.status(200).json(
+        new ApiResponse(200, section, "Section title updated successfully")
+    )
+})
+
+const deleteSection = asyncHandler (async (req, res) => {
+    const { sectionId } = req.params;
+    if(!sectionId){
+        throw new ApiError(400, "Section ID is required")
+    }
+
+    // Find the section by ID
+    const section = await Section.findById(sectionId)
+    if(!section){
+        throw new ApiError(404, "Section ID required")
+    }
+
+    // Remove the section reference from the notebook
+    const notebookId = section.notebook;
+    await Notebook.findByIdAndUpdate(notebookId, {
+        $pull: {section: sectionId}
+    })
+
+    // Delete all pages associated with the section
+    const pageIds = section.page;
+    for(const pageId of pageIds){
+        await Page.findByIdAndDelete(pageId);
+    }
+
+    await Section.findByIdAndDelete(sectionId);
+
+    return res.status(200).json(
+        new ApiResponse(200, {}, "Section and its pages deleted")
+    )
+})
+
 export {
     createSection,
-    getSection
+    getSection,
+    updateSection,
+    deleteSection
 }
