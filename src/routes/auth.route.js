@@ -6,19 +6,24 @@ import {
   verifyEmail,
   avatarUpdate,
   forgotPasswordRequest,
-  resetForgottenPassword
+  resetForgottenPassword,
+  refreshAccessToken
 } from "../controllers/auth.controller.js";
 import { verifyJwt } from "../middlewares/auth.middleware.js";
 import { upload } from "../middlewares/multer.middleware.js";
 
 const router = Router();
 
+// Unsecured route
+
 router.route("/register").post(registerUser);
-
-router.route("/verift-email/:verificationToken").get(verifyEmail);
-
 router.route("/login").post(loginUser);
+router.route("/refresh-token").post(refreshAccessToken);
+router.route("/verift-email/:verificationToken").get(verifyEmail);
+router.route("/forgot-password").post(forgotPasswordRequest);
+router.route("/reset-password/:resetToken").post(resetForgottenPassword);
 
+// Secured routes
 router.route("/logout").post(verifyJwt, logoutUser);
 
 router.route("/avatar").put(
@@ -31,9 +36,5 @@ router.route("/avatar").put(
   verifyJwt,
   avatarUpdate
 );
-
-router.route("/forgot-password").post(forgotPasswordRequest);
-
-router.route("/reset-password/:resetToken").post(resetForgottenPassword);
 
 export default router;

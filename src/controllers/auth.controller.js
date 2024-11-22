@@ -1,6 +1,7 @@
 import dotenv from "dotenv";
 dotenv.config();
 import crypto from "crypto";
+import jwt from "jsonwebtoken";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { ApiError } from "../utils/ApiError.js";
@@ -126,12 +127,16 @@ const loginUser = asyncHandler(async (req, res) => {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "None", // enable when deployee website
+    maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days in milliseconds
   };
 
   return res
     .status(200)
     .cookie("accessToken", accessToken, options)
-    .cookie("refreshToken", refreshToken, options)
+    .cookie("refreshToken", refreshToken, {
+      ...options,
+      maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days in milliseconds
+    })
     .json(
       new ApiResponse(
         200,
@@ -143,6 +148,60 @@ const loginUser = asyncHandler(async (req, res) => {
         "User logged in successfully!"
       )
     );
+});
+
+const refreshAccessToken =  asyncHandler(async (req, res) => {
+  const incomingRefreshToken = req.cookies?.refreshToken || req.body.refreshToken;
+
+  if (!incomingRefreshToken) {
+    throw new ApiError(401, "Unauthorized request");
+  }
+  
+  try {
+    const decodedToken = jwt.verify(incomingRefreshToken, process.env.REFRESH_TOKEN_SECRET);
+
+    const user = await User.findById(decodedToken?._id);
+    if (!user) {
+      throw new ApiError(401, "Invalid refresh token");
+    }
+
+    // check if incoming refresh token is same as the refresh token attached in the user document
+    // This shows that the refresh token is used or not
+    // Once it is used, we are replacing it with new refresh token below
+    if(incomingRefreshToken !== user?.refreshToken){
+      // If token is valid but is used already
+      throw new ApiError(401, "Refresh token is expired or used");
+    }
+
+    const { accessToken, refreshToken: newRefreshToken } = await generateAccessAndRefreshToken(user._id);
+
+    user.refreshToken = newRefreshToken;
+    await user.save();
+    
+    const options = {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "None", // Enable when deployed
+      maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days in milliseconds
+    }
+  
+    return res
+      .status(200)
+      .cookie("accessToken", accessToken, options)
+      .cookie("accessToken", newRefreshToken, {
+        ...options,
+        maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days in milliseconds
+      })
+      .json(
+        new ApiResponse(
+          200,
+          { accessToken, refreshToken: newRefreshToken }, 
+          "Access token refreshed"
+        )
+      );
+  } catch (error) {
+    throw new ApiError(401, error?.message || "Invalid refresh token");
+  }
 });
 
 const logoutUser = asyncHandler(async (req, res) => {
@@ -337,4 +396,5 @@ export {
   avatarUpdate,
   forgotPasswordRequest,
   resetForgottenPassword,
+  refreshAccessToken,
 };
